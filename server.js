@@ -10,6 +10,7 @@ const app=express();
 dotenv.config()
 connectDB();
 
+app.use(express.json()) // api to json data
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'))
 }

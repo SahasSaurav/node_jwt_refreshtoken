@@ -3,6 +3,10 @@ const bcrypt = require("bcrypt");
 
 const UserSchema = new mongoose.Schema(
   {
+    name: {
+      type: String,
+      required: true,
+    },
     email: {
       type: String,
       requires: true,
@@ -15,14 +19,14 @@ const UserSchema = new mongoose.Schema(
     },
     role:{
       type:String,
-      default:'user',
+      default: 'user',
       enum:['user','admin']
     }
   },
   { timestamps: true }
 );
 
-UserSchema.pre("save", async function () {
+UserSchema.pre("save", async function (next) {
   try {
     if (!this.isModified("password")) {
       next();
@@ -35,10 +39,10 @@ UserSchema.pre("save", async function () {
   }
 });
 
-UserSchema.method.isValidPassword = async function (enteredPassword) {
+UserSchema.methods.isValidPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-const User = mongoose.model(UserSchema);
+const User = mongoose.model('User',UserSchema);
 
 module.exports = User;
