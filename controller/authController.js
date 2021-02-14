@@ -8,6 +8,7 @@ const {
   signRefreshToken,
   verifyRefreshToken,
 } = require("../utils/createToken");
+const client=require('../utils/redis')
 
 const registerUser = async (req, res, next) => {
   try {
@@ -98,4 +99,25 @@ const refreshAccessToken = async (req, res, next) => {
   }
 };
 
-module.exports = { registerUser, loginUser, refreshAccessToken };
+const logoutUser=(req,res,next)=>{
+  try {
+    const {refreshToken}=req.body;
+    if(!refreshToken){
+      res.status(400)
+      throw new Error('Bad Request')
+    }
+    const userId=await verifyRefreshToken(refreshToken,res)
+    client.del(userId,(err,value)=>{
+      if(err){
+        console.error(err.message)
+        res.status(500)
+        throw new Error('InternalServerError')
+      }
+      res.sendStatus(204)
+    })
+  } catch (err) {
+    next(err)
+  }
+}
+
+module.exports = { registerUser, loginUser, refreshAccessToken,logoutUser };
