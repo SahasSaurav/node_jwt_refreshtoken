@@ -2,15 +2,17 @@ const User = require("../model/User");
 const {
   registerUserSchema,
   loginUserSchema,
-  forgotPasswordSchema
+  forgotPasswordSchema,
+  resetPasswordSchema,
 } = require("../utils/validationSchema");
 const {
   createAccessToken,
   createRefreshToken,
   verifyRefreshToken,
   createForgotPasswordToken,
+  verifyForgotPassword
 } = require("../utils/createToken");
-const client=require('../utils/redis');
+const client = require("../utils/redis");
 const { urlencoded } = require("express");
 
 const registerUser = async (req, res, next) => {
@@ -29,7 +31,7 @@ const registerUser = async (req, res, next) => {
     }
     const user = await User.create({ name, email, password });
     const accessToken = await createAccessToken(user._id);
-    const refreshToken = awaitcreatenRefreshToken(user._id);
+    const refreshToken = await createRefreshToken(user._id);
     if (user) {
       res.json({
         _id: user._id,
@@ -65,7 +67,7 @@ const loginUser = async (req, res, next) => {
     //whether the entered password match with password stored in db
     const isMatch = await user.isValidPassword(result.password);
     const accessToken = await createAccessToken(user._id);
-    const refreshToken = awaitcreatenRefreshToken(user._id);
+    const refreshToken = await createRefreshToken(user._id);
     if (user && isMatch) {
       res.json({
         _id: user._id,
@@ -93,8 +95,8 @@ const refreshAccessToken = async (req, res, next) => {
       throw new Error("Bad request");
       return;
     }
-    const userId = await verifyRefreshToken(refreshToken,res);
-    const accessToken = awaitcreatenAccessToken(userId);
+    const userId = await verifyRefreshToken(refreshToken, res);
+    const accessToken = await createnAccessToken(userId);
     const refToken = await createRefreshToken(userId);
     res.json({ accessToken, refreshToken: refToken });
   } catch (err) {
@@ -102,49 +104,92 @@ const refreshAccessToken = async (req, res, next) => {
   }
 };
 
-const logoutUser=async(req,res,next)=>{
+const logoutUser = async (req, res, next) => {
   try {
-    const {refreshToken}=req.body;
-    if(!refreshToken){
-      res.status(400)
-      throw new Error('Bad Request')
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      res.status(400);
+      throw new Error("Bad Request");
     }
-    const userId=await verifyRefreshToken(refreshToken,res)
-    client.del(userId,(err,value)=>{
-      if(err){
-        console.error(err.message)
-        res.status(500)
-        throw new Error('InternalServerError')
+    const userId = await verifyRefreshToken(refreshToken, res);
+    client.del(userId, (err, value) => {
+      if (err) {
+        console.error(err.message);
+        res.status(500);
+        throw new Error("InternalServerError");
       }
-      res.sendStatus(204)
-    })
+      res.sendStatus(204);
+    });
   } catch (err) {
-    next(err)
+    next(err);
   }
-}
+};
 
-const forgotPassword=async(req,res,next)=>{
+const forgotPassword = async (req, res, next) => {
   try {
-    const {email}=req.body;
-    const result=await forgotPasswordSchema.validateAsync({email})
+    const { email } = req.body;
+    const result = await forgotPasswordSchema.validateAsync({ email });
 
-    const user=await User.findOne({email:result.email})
-    if(!user){
-      res.status(400)
-      throw new Error('User is not registered')
+    const user = await User.findOne({ email: result.email });
+    if (!user) {
+      res.status(400);
+      throw new Error("User is not registered");
       return;
     }
-    const token=await createForgotPasswordToken(user.id.toString(),user.email,user.password)
-    const resetPasswordLink=`${req.protocol}://${req.get('host')}/${user.id.toString()}/${token}`
-    console.log({resetPasswordLink})
+    const token = await createForgotPasswordToken(
+      user.id.toString(),
+      user.email,
+      user.password
+    );
+    const resetPasswordLink = `${req.protocol}://${req.get(
+      "host"
+    )}/auth/reset-password/${user.id.toString()}/${token}`;
+    console.log({ resetPasswordLink });
     //send email to user with resetPasswordLink
     res.json({
-      message:"'Password reset link has been sent to your email"
-    })
+      message: "'Password reset link has been sent to your email",
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const resetPassword = async (req, res, next) => {
+  try {
+    const {id,token}=req.params;
+    const {password,repeatPassword}=req.body
+    // const result=await resetPasswordSchema.validateAsync(password,repeatPassword)
+    if(password!==repeatPassword){
+      res.status(400)
+      throw new Error('Password must be equal to repeat password')
+      return
+    }
+    const user=await User.findById({_id:id})
+    if(id!==user.id){
+      res.status(401)
+      throw new Error('Unauthorized')
+    }
+    const payload=await verifyForgotPassword(token,user.password,res)
+    const isUserExist=await User.findOne({_id:payload.id,email:payload.email})
+    if(isUserExist){
+      isUserExist.password=password;
+      await isUserExist.save()
+      res.status(201)
+      res.json({message:"Sucsessfully changed the password"})
+    }else{
+      res.status(401)
+      throw new Error('unAuthorized')
+    }
   } catch (err) {
     next(err)
   }
-}
+};
 
-
-module.exports = { registerUser, loginUser, refreshAccessToken,logoutUser,forgotPassword };
+module.exports = {
+  registerUser,
+  loginUser,
+  refreshAccessToken,
+  logoutUser,
+  forgotPassword,
+  resetPassword,
+};

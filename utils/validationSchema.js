@@ -39,7 +39,7 @@ const resetPasswordSchema = joi.object({
       )
     )
     .required(),
-  repeat_password: joi.ref("password"),
+  repeatPassword: joi.ref("password"),
 });
 
 module.exports = {

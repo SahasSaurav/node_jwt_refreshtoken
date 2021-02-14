@@ -76,7 +76,7 @@ const verifyRefreshToken = (refreshToken, res) => {
   });
 };
 
-const createForgotPasswordToken = ( id,email, password) => {
+const createForgotPasswordToken = (id, email, password) => {
   return new Promise((reslove, reject) => {
     const payload = {
       id,
@@ -95,4 +95,25 @@ const createForgotPasswordToken = ( id,email, password) => {
   });
 };
 
-module.exports = { createAccessToken, createRefreshToken, verifyRefreshToken,createForgotPasswordToken };
+const verifyForgotPassword = (forgotPasswordToken, password, res) => {
+  return new Promise((reslove, reject) => {
+    const secret = process.env.FORGOT_PASSWORD_TOKEN_SECRET + password;
+    jwt.verify(forgotPasswordToken, secret, (err, payload) => {
+      if (err) {
+        console.error(error.message);
+        res.status(401);
+        reject(new Error("InternalServerError"))
+        return;
+      }
+      reslove(payload)
+    });
+  });
+};
+
+module.exports = {
+  createAccessToken,
+  createRefreshToken,
+  verifyRefreshToken,
+  createForgotPasswordToken,
+  verifyForgotPassword,
+};
