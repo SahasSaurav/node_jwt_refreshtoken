@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const client = require("./redis");
 
 const signAccessToken = (userId) => {
   return new Promise((reslove, reject) => {
@@ -11,7 +12,7 @@ const signAccessToken = (userId) => {
     jwt.sign(payload, secret, options, (err, token) => {
       if (err) {
         console.error(err.message);
-        reject("InternalServerError");
+        reject(new Error("InternalServerError"));
         return;
       }
       reslove(token);
@@ -30,26 +31,49 @@ const signRefreshToken = (userId) => {
     jwt.sign(payload, secret, options, (err, token) => {
       if (err) {
         console.error(err);
-        reject("InternalServerError");
-        return;
+        reject(new Error("InternalServerError"));
       }
-      reslove(token);
+
+      client.set(String(userId), token, "EX", 24 * 60 * 60, (err, reply) => {
+        if (err) {
+          console.log(err.message);
+          reject(new Error("InternalServerError"));
+          return;
+        }
+        reslove(token);
+      });
     });
   });
 };
 
-const verifyRefreshToken=(refreshToken)=>{
-  return  new Promise((reslove,reject)=>{
-    jwt.verify(refreshToken,process.env.REFRESH_TOKEN_SECRET,(err,payload)=>{
-      if(err){
-        res.status(401)
-        return reject('Unauthorized')
+const verifyRefreshToken = (refreshToken, res) => {
+  return new Promise((reslove, reject) => {
+    jwt.verify(
+      refreshToken,
+      process.env.REFRESH_TOKEN_SECRET,
+      (err, payload) => {
+        if (err) {
+          res.status(401);
+          return reject(new Error("Unauthorized"));
+        }
+        const userId = payload.aud;
+        client.get(userId.toString(), (error, result) => {
+          if (error) {
+            console.error(error.message);
+            res.status(401);
+            reject(new Error("InternalServerError"));
+            return;
+          }
+          if (refreshToken === result) {
+            return reslove(userId);
+          } else {
+            res.status(401);
+            return reject(new Error("Unauthorized"));
+          }
+        });
       }
-      const userId=payload.aud
+    );
+  });
+};
 
-      reslove(userId)
-    }) 
-  })
-}
-
-module.exports = { signAccessToken, signRefreshToken,verifyRefreshToken };
+module.exports = { signAccessToken, signRefreshToken, verifyRefreshToken };

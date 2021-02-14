@@ -5,14 +5,6 @@ const { connectDB } = require("./config/db");
 const authRoute = require("./routes/authRoute");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
 const { requireAuth } = require("./middleware/authMiddleware");
-const client=require('./utils/redis');
-
-client.SET('foo','bar')
-
-client.GET('foo',(err,value)=>{
-  if(err) console.error(err.message)
-  console.log(value)
-})
 
 const app = express();
 

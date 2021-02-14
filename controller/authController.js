@@ -89,7 +89,7 @@ const refreshAccessToken = async (req, res, next) => {
       throw new Error("Bad request");
       return;
     }
-    const userId = await verifyRefreshToken(refreshToken);
+    const userId = await verifyRefreshToken(refreshToken,res);
     const accessToken = await signAccessToken(userId);
     const refToken = await signRefreshToken(userId);
     res.json({ accessToken, refreshToken: refToken });
