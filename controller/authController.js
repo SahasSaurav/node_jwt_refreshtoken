@@ -1,6 +1,9 @@
 const User = require("../model/User");
-const { registerUserSchema } = require("../utils/validationSchema");
-const { signAccessToken } = require("../utils/jwt");
+const {
+  registerUserSchema,
+  loginUserSchema,
+} = require("../utils/validationSchema");
+const { signAccessToken } = require("../utils/createToken");
 
 const registerUser = async (req, res, next) => {
   try {
@@ -17,14 +20,14 @@ const registerUser = async (req, res, next) => {
       throw new Error("Another user already exist with this email ");
     }
     const user = await User.create({ name, email, password });
-    const accesstoken = await signAccessToken(user._id)
+    const accessToken = await signAccessToken(user._id);
     if (user) {
       res.json({
         _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        accessToken:accesstoken,
+        accessToken: accessToken,
       });
     } else {
       res.status(400);
@@ -42,22 +45,30 @@ const registerUser = async (req, res, next) => {
 const loginUser = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    const result = await loginUserSchema.validateAsync({ email, password });
     //whether email exist in db
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: result.email });
+    if (!user) {
+      res.status(400);
+       throw new Error("User is not registered");
+    }
     //whether the entered password match with password stored in db
-    const isMatch = await user.isValidPassword(password);
+    const isMatch = await user.isValidPassword(result.password);
+    const accessToken = await signAccessToken(user._id);
     if (user && isMatch) {
       res.json({
         _id: user._id,
         nmae: user.name,
         email: user.email,
         role: user.role,
+        accessToken: accessToken,
       });
     } else {
       res.status(401);
       throw new Error("Invalid user credentials");
     }
   } catch (err) {
+    if (err.isJoi === true) res.status(400 );
     next(err);
   }
 };

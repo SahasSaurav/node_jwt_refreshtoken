@@ -17,11 +17,11 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    role:{
-      type:String,
-      default: 'user',
-      enum:['user','admin']
-    }
+    role: {
+      type: String,
+      default: "user",
+      enum: ["user", "admin"],
+    },
   },
   { timestamps: true }
 );
@@ -40,9 +40,13 @@ UserSchema.pre("save", async function (next) {
 });
 
 UserSchema.methods.isValidPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
+  try {
+    return await bcrypt.compare(enteredPassword, this.password);
+  } catch (err) {
+    throw err;
+  }
 };
 
-const User = mongoose.model('User',UserSchema);
+const User = mongoose.model("User", UserSchema);
 
 module.exports = User;
