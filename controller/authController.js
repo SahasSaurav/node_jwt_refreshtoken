@@ -3,7 +3,11 @@ const {
   registerUserSchema,
   loginUserSchema,
 } = require("../utils/validationSchema");
-const { signAccessToken, signRefreshToken } = require("../utils/createToken");
+const {
+  signAccessToken,
+  signRefreshToken,
+  verifyRefreshToken,
+} = require("../utils/createToken");
 
 const registerUser = async (req, res, next) => {
   try {
@@ -77,4 +81,21 @@ const loginUser = async (req, res, next) => {
   }
 };
 
-module.exports = { registerUser, loginUser };
+const refreshAccessToken = async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      res.status(400);
+      throw new Error("Bad request");
+      return;
+    }
+    const userId = await verifyRefreshToken(refreshToken);
+    const accessToken = await signAccessToken(userId);
+    const refToken = await signRefreshToken(userId);
+    res.json({ accessToken, refreshToken: refToken });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { registerUser, loginUser, refreshAccessToken };

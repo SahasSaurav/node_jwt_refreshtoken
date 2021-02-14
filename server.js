@@ -4,7 +4,15 @@ const morgan = require("morgan");
 const { connectDB } = require("./config/db");
 const authRoute = require("./routes/authRoute");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
-const { verifyAccessToken  } = require("./middleware/authMiddleware");
+const { requireAuth } = require("./middleware/authMiddleware");
+const client=require('./utils/redis');
+
+client.SET('foo','bar')
+
+client.GET('foo',(err,value)=>{
+  if(err) console.error(err.message)
+  console.log(value)
+})
 
 const app = express();
 
@@ -17,7 +25,7 @@ if (process.env.NODE_ENV === "development") {
 }
 
 app.use("/auth", authRoute);
-app.get("/", verifyAccessToken, async (req, res) => {
+app.get("/",requireAuth, async (req, res) => {
   console.log(req.user)
   res.send("hello");
 });

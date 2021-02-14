@@ -5,7 +5,7 @@ const signAccessToken = (userId) => {
     const payload = {};
     const secret = process.env.ACCESS_TOKEN_SECRET;
     const options = {
-      expiresIn: "30m",
+      expiresIn: "1m",
       audience: userId.toString(),
     };
     jwt.sign(payload, secret, options, (err, token) => {
@@ -38,4 +38,18 @@ const signRefreshToken = (userId) => {
   });
 };
 
-module.exports = { signAccessToken, signRefreshToken };
+const verifyRefreshToken=(refreshToken)=>{
+  return  new Promise((reslove,reject)=>{
+    jwt.verify(refreshToken,process.env.REFRESH_TOKEN_SECRET,(err,payload)=>{
+      if(err){
+        res.status(401)
+        return reject('Unauthorized')
+      }
+      const userId=payload.aud
+
+      reslove(userId)
+    }) 
+  })
+}
+
+module.exports = { signAccessToken, signRefreshToken,verifyRefreshToken };

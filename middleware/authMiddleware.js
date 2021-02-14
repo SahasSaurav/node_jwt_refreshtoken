@@ -1,7 +1,8 @@
 const jwt = require("jsonwebtoken");
 const User = require("../model/User");
 
-const verifyAccessToken = async (req, res, next) => {
+const requireAuth = async (req, res, next) => {
+  // here verifying the access token 
   try {
     if (!req.headers["authorization"]) {
       res.status(403);
@@ -33,5 +34,5 @@ const verifyAccessToken = async (req, res, next) => {
 };
 
 module.exports = {
-  verifyAccessToken,
+   requireAuth,
 };
