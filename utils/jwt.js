@@ -1,17 +1,17 @@
 const jwt = require("jsonwebtoken");
 
-const signAccessToken = (userid) => {
+const signAccessToken = (userId) => {
   return new Promise((reslove, reject) => {
     const payload = {};
     const secret = process.env.ACCESS_TOKEN_SECRET;
     const options = {
-      expiresIn: "0.5hrs",
-      auidence: userid,
+      expiresIn: "1h",
+      audience: userId.toString(),
     };
     jwt.sign(payload, secret, options, (err, token) => {
       if (err) {
-        console.log(err);
-        reject();
+        console.log(err.message);
+        reject('InternalServerError');
         return;
       }
       reslove(token);
