@@ -3,7 +3,7 @@ const {
   registerUserSchema,
   loginUserSchema,
 } = require("../utils/validationSchema");
-const { signAccessToken } = require("../utils/createToken");
+const { signAccessToken, signRefreshToken } = require("../utils/createToken");
 
 const registerUser = async (req, res, next) => {
   try {
@@ -21,13 +21,15 @@ const registerUser = async (req, res, next) => {
     }
     const user = await User.create({ name, email, password });
     const accessToken = await signAccessToken(user._id);
+    const refreshToken = await signRefreshToken(user._id);
     if (user) {
       res.json({
         _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        accessToken: accessToken,
+        accessToken,
+        refreshToken,
       });
     } else {
       res.status(400);
@@ -50,25 +52,27 @@ const loginUser = async (req, res, next) => {
     const user = await User.findOne({ email: result.email });
     if (!user) {
       res.status(400);
-       throw new Error("User is not registered");
+      throw new Error("User is not registered");
     }
     //whether the entered password match with password stored in db
     const isMatch = await user.isValidPassword(result.password);
     const accessToken = await signAccessToken(user._id);
+    const refreshToken = await signRefreshToken(user._id);
     if (user && isMatch) {
       res.json({
         _id: user._id,
         nmae: user.name,
         email: user.email,
         role: user.role,
-        accessToken: accessToken,
+        accessToken,
+        refreshToken,
       });
     } else {
       res.status(401);
       throw new Error("Invalid user credentials");
     }
   } catch (err) {
-    if (err.isJoi === true) res.status(400 );
+    if (err.isJoi === true) res.status(400);
     next(err);
   }
 };
