@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const client = require("./redis");
 
-const signAccessToken = (userId) => {
+const createAccessToken = (userId) => {
   return new Promise((reslove, reject) => {
     const payload = {};
     const secret = process.env.ACCESS_TOKEN_SECRET;
@@ -20,7 +20,7 @@ const signAccessToken = (userId) => {
   });
 };
 
-const signRefreshToken = (userId) => {
+const createRefreshToken = (userId) => {
   return new Promise((reslove, reject) => {
     const payload = {};
     const secret = process.env.REFRESH_TOKEN_SECRET;
@@ -76,4 +76,23 @@ const verifyRefreshToken = (refreshToken, res) => {
   });
 };
 
-module.exports = { signAccessToken, signRefreshToken, verifyRefreshToken };
+const createForgotPasswordToken = ( id,email, password) => {
+  return new Promise((reslove, reject) => {
+    const payload = {
+      id,
+      email,
+    };
+    const secret = process.env.FORGOT_PASSWORD_TOKEN_SECRET + password;
+    const options = { expiresIn: "15m" };
+    const token = jwt.sign(payload, secret, options, (err, token) => {
+      if (err) {
+        console.error(err.message);
+        reject(new Error("InternalServerError"));
+        return;
+      }
+      reslove(token);
+    });
+  });
+};
+
+module.exports = { createAccessToken, createRefreshToken, verifyRefreshToken,createForgotPasswordToken };
