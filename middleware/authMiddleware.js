@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../model/User");
 
 const requireAuth = async (req, res, next) => {
-  // here verifying the access token 
+  // here verifying the access token
   try {
     if (!req.headers["authorization"]) {
       res.status(403);
@@ -33,6 +33,20 @@ const requireAuth = async (req, res, next) => {
   }
 };
 
+const admin = (req, res, next) => {
+  try {
+    if (req.user && req.user.role === "admin") {
+      next();
+    } else {
+      res.status(401);
+      throw new Error("Not authorized as an admin");
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
-   requireAuth,
+  requireAuth,
+  admin,
 };

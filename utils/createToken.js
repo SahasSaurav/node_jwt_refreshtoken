@@ -6,7 +6,7 @@ const createAccessToken = (userId) => {
     const payload = {};
     const secret = process.env.ACCESS_TOKEN_SECRET;
     const options = {
-      expiresIn: "1m",
+      expiresIn: "30m",
       audience: userId.toString(),
     };
     jwt.sign(payload, secret, options, (err, token) => {
@@ -101,7 +101,7 @@ const verifyForgotPassword = (forgotPasswordToken, password, res) => {
     jwt.verify(forgotPasswordToken, secret, (err, payload) => {
       if (err) {
         console.error(error.message);
-        res.status(401);
+        res.status(500);
         reject(new Error("InternalServerError"))
         return;
       }

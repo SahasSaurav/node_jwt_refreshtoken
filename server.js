@@ -4,7 +4,7 @@ const morgan = require("morgan");
 const { connectDB } = require("./config/db");
 const authRoute = require("./routes/authRoute");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
-const { requireAuth } = require("./middleware/authMiddleware");
+const { requireAuth,admin } = require("./middleware/authMiddleware");
 
 const app = express();
 
@@ -20,6 +20,10 @@ app.use("/auth", authRoute);
 app.get("/",requireAuth, async (req, res) => {
   console.log(req.user)
   res.send("hello");
+});
+app.get("/admin",requireAuth,admin, async (req, res) => {
+  console.log(req.user)
+  res.send("hello admin");
 });
 
 app.use(notFound);

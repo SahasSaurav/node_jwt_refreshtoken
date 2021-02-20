@@ -3,7 +3,7 @@ const {
   registerUserSchema,
   loginUserSchema,
   forgotPasswordSchema,
-  resetPasswordSchema,
+  resetPasswordSchema
 } = require("../utils/validationSchema");
 const {
   createAccessToken,
@@ -13,7 +13,6 @@ const {
   verifyForgotPassword
 } = require("../utils/createToken");
 const client = require("../utils/redis");
-const { urlencoded } = require("express");
 
 const registerUser = async (req, res, next) => {
   try {
@@ -158,12 +157,7 @@ const resetPassword = async (req, res, next) => {
   try {
     const {id,token}=req.params;
     const {password,repeatPassword}=req.body
-    // const result=await resetPasswordSchema.validateAsync(password,repeatPassword)
-    if(password!==repeatPassword){
-      res.status(400)
-      throw new Error('Password must be equal to repeat password')
-      return
-    }
+    const result=await resetPasswordSchema.validateAsync({password,repeatPassword});
     const user=await User.findById({_id:id})
     if(id!==user.id){
       res.status(401)
@@ -181,6 +175,7 @@ const resetPassword = async (req, res, next) => {
       throw new Error('unAuthorized')
     }
   } catch (err) {
+    if (err.isJoi === true) res.status(400);
     next(err)
   }
 };
